@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>チームタスク管理</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>チームタスク管理</h1>
+      <div class="header-actions">
+        <button id="btn-add-task" class="btn btn-primary">+ タスク追加</button>
+        <button id="btn-manage-members" class="btn btn-secondary">メンバー管理</button>
+        <button id="btn-export" class="btn btn-secondary">エクスポート</button>
+      </div>
+    </header>
+
+    <section class="filters">
+      <div class="filter-group">
+        <label>ステータス</label>
+        <select id="filter-status">
+          <option value="all">すべて</option>
+          <option value="未着手">未着手</option>
+          <option value="進行中">進行中</option>
+          <option value="レビュー待ち">レビュー待ち</option>
+          <option value="完了">完了</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>担当者</label>
+        <select id="filter-assignee">
+          <option value="all">すべて</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>優先度</label>
+        <select id="filter-priority">
+          <option value="all">すべて</option>
+          <option value="高">高</option>
+          <option value="中">中</option>
+          <option value="低">低</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>並び替え</label>
+        <select id="sort-by">
+          <option value="created-desc">作成日（新しい順）</option>
+          <option value="created-asc">作成日（古い順）</option>
+          <option value="priority">優先度</option>
+          <option value="deadline">期限</option>
+          <option value="estimate">見積もり時間</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="summary-bar">
+      <div class="summary-item">
+        <span class="summary-label">全タスク</span>
+        <span class="summary-value" id="total-count">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">未着手</span>
+        <span class="summary-value" id="todo-count">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">進行中</span>
+        <span class="summary-value" id="wip-count">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">完了</span>
+        <span class="summary-value" id="done-count">0</span>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">合計見積もり</span>
+        <span class="summary-value" id="total-estimate">0h</span>
+      </div>
+    </section>
+
+    <section class="task-list" id="task-list">
+      <p class="empty-message" id="empty-message">タスクがありません。「+ タスク追加」から始めましょう。</p>
+    </section>
+  </div>
+
+  <!-- タスク追加/編集モーダル -->
+  <div class="modal-overlay" id="task-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">タスク追加</h2>
+        <button class="modal-close" id="modal-close">&times;</button>
+      </div>
+      <form id="task-form">
+        <input type="hidden" id="task-id">
+        <div class="form-row">
+          <div class="form-group full">
+            <label for="task-title">タスク名 <span class="required">*</span></label>
+            <input type="text" id="task-title" required placeholder="タスク名を入力">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group full">
+            <label for="task-action">アクション / 詳細</label>
+            <textarea id="task-action" rows="3" placeholder="具体的なアクション内容を記述"></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-assignee">担当者</label>
+            <select id="task-assignee">
+              <option value="">未割当</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="task-status">ステータス</label>
+            <select id="task-status">
+              <option value="未着手">未着手</option>
+              <option value="進行中">進行中</option>
+              <option value="レビュー待ち">レビュー待ち</option>
+              <option value="完了">完了</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-priority">優先度</label>
+            <select id="task-priority">
+              <option value="中">中</option>
+              <option value="高">高</option>
+              <option value="低">低</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="task-estimate">見積もり時間（時間）</label>
+            <input type="number" id="task-estimate" min="0" step="0.5" placeholder="例: 2.5">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="task-deadline">期限</label>
+            <input type="date" id="task-deadline">
+          </div>
+          <div class="form-group">
+            <label for="task-category">カテゴリ</label>
+            <select id="task-category">
+              <option value="">なし</option>
+              <option value="受注">受注</option>
+              <option value="発注">発注</option>
+              <option value="出荷">出荷</option>
+              <option value="請求">請求</option>
+              <option value="システム">システム</option>
+              <option value="その他">その他</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel">キャンセル</button>
+          <button type="submit" class="btn btn-primary" id="btn-save">保存</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- メンバー管理モーダル -->
+  <div class="modal-overlay" id="member-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>メンバー管理</h2>
+        <button class="modal-close" id="member-modal-close">&times;</button>
+      </div>
+      <div class="member-form">
+        <div class="form-row">
+          <div class="form-group">
+            <input type="text" id="member-name" placeholder="メンバー名を入力">
+          </div>
+          <div class="form-group">
+            <button class="btn btn-primary" id="btn-add-member">追加</button>
+          </div>
+        </div>
+      </div>
+      <ul class="member-list" id="member-list"></ul>
+    </div>
+  </div>
+
+  <!-- エクスポートモーダル -->
+  <div class="modal-overlay" id="export-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>エクスポート / 共有</h2>
+        <button class="modal-close" id="export-modal-close">&times;</button>
+      </div>
+      <div class="export-options">
+        <p>タスクデータをコピーしてチームメンバーと共有できます。</p>
+        <div class="form-row">
+          <button class="btn btn-primary" id="btn-copy-json">JSONをコピー</button>
+          <button class="btn btn-primary" id="btn-copy-csv">CSVをコピー</button>
+          <button class="btn btn-secondary" id="btn-download-csv">CSVダウンロード</button>
+        </div>
+        <hr>
+        <h3>インポート</h3>
+        <p>JSONデータを貼り付けてインポートできます。</p>
+        <textarea id="import-data" rows="4" placeholder="JSONデータを貼り付け"></textarea>
+        <button class="btn btn-primary" id="btn-import">インポート</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
