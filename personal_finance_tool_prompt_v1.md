@@ -160,3 +160,33 @@
 | Phase 6 | ダッシュボード（modDashboard、KPI・グラフ・目標進捗） |
 | Phase 7 | ヘルプ整備・操作性改善・入力バリデーション強化 |
 | Phase 8 | 総合テスト・パフォーマンス最適化・リリース |
+
+---
+
+## 13. Phase 2 実装メモ（CSV取込・取引台帳）
+
+既存ブックへの**完全追加型**で実装（Phase 1 のモジュールは無変更）。
+
+### 追加シート
+- **取引台帳**（`SHEET_LEDGER`, 濃紺）: A取引ID / B日付 / C大分類 / D中分類 / E摘要 /
+  F金額 / G支払方法 / H収支区分 / I入力元 / J取込日時 / K重複キー。
+  動的名前付き範囲 `取引台帳`（OFFSET+COUNTA）を定義。
+- **CSV取込**（`SHEET_IMPORT`, 緑）: 取込プレビュー（取込○/日付/摘要/金額/収支区分/
+  大分類/中分類/支払方法/種別/元行/重複?）＋ボタン4種。
+
+### 追加VBAモジュール
+- `modLedger`: 台帳追記 `AppendRecords`、取引ID採番 `NextTransactionId`、
+  重複キー `BuildDupKey`、手入力転記の本接続 `TransferManualToLedger`。
+- `modImport`: `ImportAccountCSV`/`ImportCardCSV`（ADODB.Streamで文字コード対応、
+  CSV引用符対応パーサ、金額/日付の柔軟解釈）、自動分類 `Classify`、
+  台帳取込 `CommitPreviewToLedger`、`ClearPreview`。
+- `modSetup`: `Setup_Phase2`（シート・ボタン・名前付き範囲・マッピング/ルール初期化。冪等）。
+
+### CSV列マッピング（設定シート I〜L 列に schema 変更）
+`種別 / 項目 / 値 / 備考`。口座は 出金列→支出・入金列→収入、カードは全件支出。
+文字コード・列番号は実CSVに合わせて編集可能。
+
+### 重複排除
+`日付＋金額＋摘要先頭20字＋支払方法` をキーに台帳K列で判定（再取込しても安全）。
+
+詳細な導入手順は `docs/SETUP_PHASE2.md` を参照。

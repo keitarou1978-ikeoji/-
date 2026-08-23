@@ -30,5 +30,8 @@ Excel + VBA による個人向け資金管理ツール。設計仕様と Phase 1
 | `人生奪還PJ_資金管理ツール_v1.xlsm` | 成果物ブック（Phase 1: 設定／手入力シート） |
 | [build/build_workbook.py](./build/build_workbook.py) | ブック生成スクリプト |
 | [build/verify_sampledata.py](./build/verify_sampledata.py) | テストデータ生成ロジックの検証 |
-| [vba/](./vba/) | VBAモジュール（modConfig / modManualEntry / modUtils / shtManual） |
-| [docs/SETUP_VBA.md](./docs/SETUP_VBA.md) | VBAインポート・ボタン割当の手順 |
+| [vba/](./vba/) | VBAモジュール（Phase1: modConfig/modManualEntry/modUtils/shtManual、Phase2: modLedger/modImport/modSetup） |
+| [vba_sjis/](./vba_sjis/) | 上記のShift-JIS版（Excelインポート用） |
+| [samples/](./samples/) | CSV取込テスト用サンプル（口座/カード, Shift-JIS） |
+| [docs/SETUP_VBA.md](./docs/SETUP_VBA.md) | Phase1 VBAインポート・ボタン割当の手順 |
+| [docs/SETUP_PHASE2.md](./docs/SETUP_PHASE2.md) | Phase2 セットアップ手順（CSV取込・取引台帳） |

@@ -9,7 +9,11 @@ import os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC_DIR = os.path.join(ROOT, "vba")
 DST_DIR = os.path.join(ROOT, "vba_sjis")
-FILES = ["modConfig.bas", "modManualEntry.bas", "modUtils.bas", "shtManual.cls"]
+FILES = [
+    "modConfig.bas", "modManualEntry.bas", "modUtils.bas", "shtManual.cls",
+    # Phase 2
+    "modLedger.bas", "modImport.bas", "modSetup.bas",
+]
 
 
 def main():
