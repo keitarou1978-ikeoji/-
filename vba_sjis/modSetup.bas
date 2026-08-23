@@ -91,9 +91,21 @@ Private Sub BuildImportSheet()
     ws.Range("A1").Font.Bold = True
     ws.Range("A1").Font.Size = 14
 
-    ws.Range("A3").Value = "手順: ①「口座CSVを取込」or「カードCSVを取込」→ ②内容(黄色=未分類)を確認/修正 → ③「取引台帳へ取込」"
+    ws.Range("A3").Value = "手順: ①プロファイルを選ぶ → ②「CSVを取込」→ ③内容(黄色=未分類/灰色=振替)を確認/修正 → ④「取引台帳へ取込」"
     ws.Range("A3").Font.Color = RGB(120, 120, 120)
     ws.Range("A3").Font.Size = 9
+
+    ' プロファイル選択セル（B2）＋ラベル
+    ws.Range("A2").Value = "取込プロファイル:"
+    ws.Range("A2").Font.Bold = True
+    With ws.Range(IMPORT_PROFILE_CELL).Validation
+        .Delete
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:="=プロファイルリスト"
+        .IgnoreBlank = True
+        .InCellDropdown = True
+    End With
+    ws.Range(IMPORT_PROFILE_CELL).Value = "口座A"
+    ws.Range(IMPORT_PROFILE_CELL).Interior.Color = RGB(255, 255, 0)
 
     Dim headers As Variant
     headers = Array("取込○", "日付", "摘要", "金額", "収支区分", "大分類", _
@@ -111,11 +123,10 @@ Private Sub BuildImportSheet()
     AddListValidation ws, IM_MAJOR, "=" & NR_MAJOR_LIST
     AddListValidation ws, IM_PAY, "=" & NR_PAYMENT_LIST
 
-    ' ボタン配置（見出し行の上、2行目）
-    AddButton ws, ws.Range("B2"), 120, 24, "口座CSVを取込", "modImport.ImportAccountCSV"
-    AddButton ws, ws.Range("D2"), 120, 24, "カードCSVを取込", "modImport.ImportCardCSV"
-    AddButton ws, ws.Range("F2"), 120, 24, "取引台帳へ取込", "modImport.CommitPreviewToLedger"
-    AddButton ws, ws.Range("H2"), 110, 24, "プレビュー消去", "modImport.ClearPreview"
+    ' ボタン配置（見出し行の上、2行目。プロファイル選択B2の右に並べる）
+    AddButton ws, ws.Range("C2"), 120, 24, "CSVを取込", "modImport.ImportSelectedProfile"
+    AddButton ws, ws.Range("E2"), 120, 24, "取引台帳へ取込", "modImport.CommitPreviewToLedger"
+    AddButton ws, ws.Range("G2"), 110, 24, "プレビュー消去", "modImport.ClearPreview"
 End Sub
 
 '------------------------------------------------------------------
@@ -137,20 +148,34 @@ Private Sub ConfigureSettings()
         End With
     Next c
 
+    ' プロファイル定義（実CSVに合わせた初期値。列番号は1始まり）
+    '  口座A: 日付1 / 摘要=摘要内容3 / 出金4 / 入金5 / 見出し1行
+    '  口座B: 日付1 / 摘要=取扱内容4 / 出金=お引出し2 / 入金=お預入れ3 / 見出し1行
+    '  カード: 日付=利用日4 / 摘要=利用店名3 / 金額7 / 見出し2行(名義行を除外)
     Dim rows As Variant
     rows = Array( _
-        Array("口座", "見出し行数", 1, "先頭の見出し行数"), _
-        Array("口座", "日付列", 1, "1始まりの列番号"), _
-        Array("口座", "摘要列", 2, ""), _
-        Array("口座", "出金列", 4, "支出になる列"), _
-        Array("口座", "入金列", 5, "収入になる列"), _
-        Array("口座", "文字コード", "Shift_JIS", "UTF-8も可"), _
-        Array("口座", "既定支払方法", "メガバンク口座引落", ""), _
-        Array("カード", "見出し行数", 1, ""), _
-        Array("カード", "日付列", 1, ""), _
-        Array("カード", "摘要列", 2, ""), _
-        Array("カード", "金額列", 5, "支出金額の列"), _
-        Array("カード", "文字コード", "Shift_JIS", "UTF-8も可"), _
+        Array("口座A", "種類", "口座", "口座/カード"), _
+        Array("口座A", "見出し行数", 1, "先頭の見出し行数"), _
+        Array("口座A", "日付列", 1, "1始まりの列番号"), _
+        Array("口座A", "摘要列", 3, "摘要内容(相手先)"), _
+        Array("口座A", "出金列", 4, "支出になる列"), _
+        Array("口座A", "入金列", 5, "収入になる列"), _
+        Array("口座A", "文字コード", "Shift_JIS", "UTF-8も可"), _
+        Array("口座A", "既定支払方法", "メガバンク口座引落", ""), _
+        Array("口座B", "種類", "口座", ""), _
+        Array("口座B", "見出し行数", 1, ""), _
+        Array("口座B", "日付列", 1, ""), _
+        Array("口座B", "摘要列", 4, "お取り扱い内容"), _
+        Array("口座B", "出金列", 2, "お引出し"), _
+        Array("口座B", "入金列", 3, "お預入れ"), _
+        Array("口座B", "文字コード", "Shift_JIS", ""), _
+        Array("口座B", "既定支払方法", "メガバンク口座引落", ""), _
+        Array("カード", "種類", "カード", ""), _
+        Array("カード", "見出し行数", 2, "名義行を除外"), _
+        Array("カード", "日付列", 4, "ご利用日"), _
+        Array("カード", "摘要列", 3, "ご利用店名"), _
+        Array("カード", "金額列", 7, "ご利用金額(円)"), _
+        Array("カード", "文字コード", "Shift_JIS", ""), _
         Array("カード", "既定支払方法", "クレジットカード", ""))
 
     Dim r As Long
@@ -162,30 +187,64 @@ Private Sub ConfigureSettings()
     Next r
     AddOrReplaceName NR_CSV_MAPPING, "='設定'!$I$3:$L$" & (2 + UBound(rows) + 1)
 
+    ' --- プロファイル一覧（N列。CSV取込シートのドロップダウン用） ---
+    shtConfig.Range("N2:N50").ClearContents
+    With shtConfig.Cells(2, 14)
+        .Value = "プロファイル"
+        .Font.Bold = True
+        .Font.Color = RGB(255, 255, 255)
+        .Interior.Color = RGB(68, 114, 196)
+        .HorizontalAlignment = xlCenter
+    End With
+    Dim profs As Variant
+    profs = Array("口座A", "口座B", "カード")
+    Dim p As Long
+    For p = 0 To UBound(profs)
+        shtConfig.Cells(3 + p, 14).Value = profs(p)
+    Next p
+    AddOrReplaceName "プロファイルリスト", "='設定'!$N$3:$N$" & (2 + UBound(profs) + 1)
+
     ' --- 自動分類ルール（O:Q を拡充） ---
     shtConfig.Range("O3:Q200").ClearContents
+    ' 上から順に部分一致で評価。振替(内部移動)を先に置き、集計対象外にする。
     Dim rules As Variant
     rules = Array( _
+        Array("ニコス", "振替", "カード引落"), _
+        Array("ﾆｺｽ", "振替", "カード引落"), _
+        Array("ATM", "振替", "ATM出金"), _
+        Array("セブンギンコウ", "振替", "ATM出金"), _
+        Array("ｾﾌﾞﾝｷﾞﾝｺｳ", "振替", "ATM出金"), _
+        Array("カード手数料", "振替", "手数料"), _
+        Array("カード", "振替", "ATM出金"), _
+        Array("ｶｰﾄﾞ", "振替", "ATM出金"), _
+        Array("パソコン振替", "振替", "口座間移動"), _
+        Array("ﾊﾟｿｺﾝ振替", "振替", "口座間移動"), _
+        Array("振替", "振替", "口座間移動"), _
+        Array("まいばすけっと", "食費", "食料品"), _
+        Array("スキヤ", "食費", "外食"), _
+        Array("すき家", "食費", "外食"), _
+        Array("マクドナルド", "食費", "外食"), _
+        Array("スターバックス", "食費", "カフェ・嗜好品"), _
         Array("セブンイレブン", "食費", "食料品"), _
         Array("ローソン", "食費", "食料品"), _
+        Array("ﾛ-ｿﾝ", "食費", "食料品"), _
         Array("ファミリーマート", "食費", "食料品"), _
         Array("イオン", "食費", "食料品"), _
-        Array("スターバックス", "食費", "カフェ・嗜好品"), _
-        Array("マクドナルド", "食費", "外食"), _
-        Array("東京電力", "水道光熱費", "電気"), _
-        Array("東京ガス", "水道光熱費", "ガス"), _
-        Array("水道", "水道光熱費", "水道"), _
-        Array("ドコモ", "通信費", "携帯電話"), _
-        Array("ソフトバンク", "通信費", "携帯電話"), _
+        Array("AMAZON", "日用品", "消耗品"), _
+        Array("ENEOS", "交通費", "ガソリン"), _
         Array("JR", "交通費", "電車・バス"), _
         Array("Suica", "交通費", "電車・バス"), _
-        Array("ENEOS", "交通費", "ガソリン"), _
-        Array("Amazon", "日用品", "消耗品"), _
-        Array("ドラッグ", "日用品", "衛生用品"), _
-        Array("薬局", "医療・健康", "病院・薬"), _
-        Array("Netflix", "娯楽・交際費", "趣味・レジャー"), _
+        Array("NETFLIX", "娯楽・交際費", "趣味・レジャー"), _
+        Array("DRAMABOX", "娯楽・交際費", "趣味・レジャー"), _
+        Array("OCULUS", "娯楽・交際費", "趣味・レジャー"), _
+        Array("ANTHROPIC", "教育・教養", "学習・講座"), _
+        Array("ドコモ", "通信費", "携帯電話"), _
+        Array("ソフトバンク", "通信費", "携帯電話"), _
+        Array("NTT", "通信費", "インターネット"), _
         Array("ユニクロ", "被服・美容", "衣服"), _
-        Array("給与", "給与収入", "給与"))
+        Array("薬局", "医療・健康", "病院・薬"), _
+        Array("東京電力", "水道光熱費", "電気"), _
+        Array("東京ガス", "水道光熱費", "ガス"))
     For r = 0 To UBound(rules)
         shtConfig.Cells(3 + r, 15).Value = rules(r)(0)
         shtConfig.Cells(3 + r, 16).Value = rules(r)(1)
