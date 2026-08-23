@@ -123,10 +123,14 @@ Private Sub BuildImportSheet()
     AddListValidation ws, IM_MAJOR, "=" & NR_MAJOR_LIST
     AddListValidation ws, IM_PAY, "=" & NR_PAYMENT_LIST
 
-    ' ボタン配置（見出し行の上、2行目。プロファイル選択B2の右に並べる）
-    AddButton ws, ws.Range("C2"), 120, 24, "CSVを取込", "modImport.ImportSelectedProfile"
-    AddButton ws, ws.Range("E2"), 120, 24, "取引台帳へ取込", "modImport.CommitPreviewToLedger"
-    AddButton ws, ws.Range("G2"), 110, 24, "プレビュー消去", "modImport.ClearPreview"
+    ' ボタン配置：B2ドロップダウンの右へ、座標を順送りで等間隔に並べる（重なり防止）
+    ws.Rows(2).RowHeight = 28
+    Dim topPos As Double, leftPos As Double
+    topPos = ws.Range("C2").Top + 2
+    leftPos = ws.Range("C2").Left
+    leftPos = AddButtonSeq(ws, leftPos, topPos, 110, 24, "CSVを取込", "modImport.ImportSelectedProfile")
+    leftPos = AddButtonSeq(ws, leftPos, topPos, 120, 24, "取引台帳へ取込", "modImport.CommitPreviewToLedger")
+    leftPos = AddButtonSeq(ws, leftPos, topPos, 110, 24, "プレビュー消去", "modImport.ClearPreview")
 End Sub
 
 '------------------------------------------------------------------
@@ -259,9 +263,19 @@ End Sub
 Private Sub WireManualTransferButton()
     On Error Resume Next
     shtManual.Buttons.Delete
+    ' Phase 1 の赤い飾りセル（A2:C2 結合＋D2 注記）を解除・消去してからボタンを置く
+    shtManual.Range("A2:D2").UnMerge
+    With shtManual.Range("A2:D2")
+        .ClearContents
+        .Interior.ColorIndex = xlNone
+        .Borders.LineStyle = xlNone
+    End With
+    shtManual.Rows(2).RowHeight = 26
     On Error GoTo 0
-    AddButton shtManual, shtManual.Range("A2"), 140, 22, "取引台帳へ転記", "modLedger.TransferManualToLedger"
-    ' Phase 1 の説明セルは残置（害はない）
+    Dim topPos As Double, leftPos As Double
+    topPos = shtManual.Range("A2").Top + 2
+    leftPos = shtManual.Range("A2").Left + 2
+    AddButtonSeq shtManual, leftPos, topPos, 140, 22, "取引台帳へ転記", "modLedger.TransferManualToLedger"
 End Sub
 
 '==================================================================
@@ -308,16 +322,17 @@ Private Sub AddListValidation(ByVal ws As Worksheet, ByVal colIdx As Long, ByVal
     End With
 End Sub
 
-' フォームボタンを配置しマクロを割り当てる
-Private Sub AddButton(ByVal ws As Worksheet, ByVal anchor As Range, _
-                      ByVal w As Double, ByVal h As Double, _
-                      ByVal caption As String, ByVal macroName As String)
+' フォームボタンを座標指定で配置し、次に置くボタンの左位置(現在+幅+余白)を返す
+Private Function AddButtonSeq(ByVal ws As Worksheet, ByVal leftPos As Double, ByVal topPos As Double, _
+                             ByVal w As Double, ByVal h As Double, _
+                             ByVal caption As String, ByVal macroName As String) As Double
     Dim btn As Button
-    Set btn = ws.Buttons.Add(anchor.Left, anchor.Top, w, h)
+    Set btn = ws.Buttons.Add(leftPos, topPos, w, h)
     btn.caption = caption
     btn.OnAction = macroName
     btn.Font.Size = 10
-End Sub
+    AddButtonSeq = leftPos + w + 8   ' 8pt の間隔をあけて次のボタン位置を返す
+End Function
 
 ' 名前付き範囲を追加/置換（ブックレベル）
 Private Sub AddOrReplaceName(ByVal nm As String, ByVal refersTo As String)
